@@ -19,17 +19,18 @@ ul{list-style:none;padding:0;margin:0}li{padding:8px 0;border-bottom:1px solid v
 .hide{display:none}.ai{white-space:pre-wrap;border-left:4px solid var(--ac);padding-left:12px}h2{font-size:1.1rem;margin:0 0 10px}
 </style></head><body><main>
 <h1>📊 AI Data Science Insight Generator</h1>
-<p class="sub">Upload a CSV, Excel or JSON file to get automated insights, charts and a detailed report.</p>
-<div id="drop" class="card"><b>Click or drag a file here</b><br><span class="sub">.csv · .xlsx · .json (max 25 MB)</span>
-<input id="file" type="file" accept=".csv,.xlsx,.xls,.json" class="hide"></div>
+<p class="sub">Upload any file - tables, documents, PDFs, images, logs, archives - and get automated insights, charts and a detailed report.</p>
+<div id="drop" class="card"><b>Click or drag a file here</b><br><span class="sub">CSV · Excel · JSON · PDF · Word · PowerPoint · TXT · logs · images · anything else (max 25 MB)</span>
+<input id="file" type="file" class="hide"></div>
 <p id="msg" class="sub"></p>
 <div id="out" class="hide">
 <p><a id="dl" class="btn">⬇ Download report</a> <button id="ai">✨ AI summary</button></p>
-<div class="card kpis" id="kpis"></div>
+<p class="sub" id="kind"></p><div class="card kpis" id="kpis"></div>
 <div class="card hide" id="aiBox"><h2>AI Summary</h2><div class="ai" id="aiTx"></div></div>
 <div class="card"><h2>Key insights</h2><ul id="ins"></ul></div>
 <div class="card"><h2>Visualizations</h2><div class="grid" id="charts"></div></div>
-<div class="card"><h2>Column summary</h2><div class="scroll"><table id="tbl"></table></div></div>
+<div class="card hide" id="colCard"><h2>Column summary</h2><div class="scroll"><table id="tbl"></table></div></div>
+<div class="card hide" id="pvCard"><h2>Preview</h2><div class="scroll" id="pv"></div></div>
 </div></main>
 <script>
 const $=id=>document.getElementById(id);let rid=null;
@@ -47,11 +48,14 @@ async function upload(f){
 }
 function render(d){
   rid=d.id;$('out').classList.remove('hide');$('aiBox').classList.add('hide');$('dl').href='/api/report/'+rid;
-  const k=d.kpis;$('kpis').innerHTML=[[k.rows.toLocaleString(),'Rows'],[k.columns,'Columns'],[k.duplicates,'Duplicates'],[k.insights,'Insights']].map(([a,b])=>`<div><b>${a}</b><span class="sub">${b}</span></div>`).join('');
+  $('kind').textContent='Detected: '+d.kind_label+' · '+d.filename;
+  $('kpis').innerHTML=d.kpis.map(k=>`<div><b>${esc(k.value)}</b><span class="sub">${esc(k.label)}</span></div>`).join('');
   $('ins').innerHTML=d.insights.map(i=>`<li><span class="tag ${i.severity}">${i.severity}</span><b>${esc(i.category)}:</b> ${esc(i.text)}</li>`).join('')||'<li>No issues detected 🎉</li>';
   $('charts').innerHTML=Object.entries(d.charts).map(([t,b])=>`<img alt="${esc(t)}" src="data:image/png;base64,${b}">`).join('');
-  $('tbl').innerHTML='<tr><th>Column</th><th>Type</th><th>Missing</th><th>Unique</th><th>Mean</th><th>Min</th><th>Max</th></tr>'+
+  $('colCard').classList.toggle('hide',!d.columns);
+  if(d.columns)$('tbl').innerHTML='<tr><th>Column</th><th>Type</th><th>Missing</th><th>Unique</th><th>Mean</th><th>Min</th><th>Max</th></tr>'+
     d.columns.map(c=>`<tr><td>${esc(c.name)}</td><td>${esc(c.dtype)}</td><td>${c.missing_pct}%</td><td>${c.unique}</td><td>${esc(c.mean)}</td><td>${esc(c.min)}</td><td>${esc(c.max)}</td></tr>`).join('');
+  $('pvCard').classList.toggle('hide',!d.preview_html);$('pv').innerHTML=d.preview_html||'';
 }
 $('ai').onclick=async()=>{
   $('aiBox').classList.remove('hide');$('aiTx').textContent='Thinking…';
