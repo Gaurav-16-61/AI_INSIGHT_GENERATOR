@@ -3,5 +3,10 @@ pandas
 numpy
 matplotlib
 openpyxl
+xlrd
+pypdf
+python-docx
+python-pptx
+pillow
 anthropic
 gunicorn
